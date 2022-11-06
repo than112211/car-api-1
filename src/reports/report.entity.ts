@@ -1,19 +1,9 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  ManyToOne,
-  JoinColumn,
-} from 'typeorm';
-import { User } from './user';
+import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { User } from '../users/user.entity';
+import { Base } from '../shared/entity/base.entity';
 
 @Entity({ name: 'reports' })
-export class Report {
-  @PrimaryGeneratedColumn('uuid', {
-    name: 'id',
-  })
-  id: string;
-
+export class Report extends Base {
   @Column({
     name: 'approved',
     type: 'boolean',
