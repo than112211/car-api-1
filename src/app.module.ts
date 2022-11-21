@@ -1,8 +1,10 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './data-config';
+import { UserModule } from './users/user.module';
+import { LoggerMiddleware } from './shared/middleware/logger';
 
 @Module({
   imports: [
@@ -10,8 +12,14 @@ import { DatabaseModule } from './data-config';
       envFilePath: `.env.${process.env.NODE_ENV}`,
     }),
     DatabaseModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule {
+  configure(consumer: MiddlewareConsumer) {
+    // Ap dung all route
+    consumer.apply(LoggerMiddleware).forRoutes('*');
+  }
+}

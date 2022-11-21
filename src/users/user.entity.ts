@@ -1,13 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { Report } from './report';
+import { Base } from '../shared/entity/base.entity';
+import { Entity, Column, OneToMany } from 'typeorm';
+import { Report } from '../reports/report.entity';
 
 @Entity({ name: 'users' })
-export class User {
-  @PrimaryGeneratedColumn('uuid', {
-    name: 'id',
-  })
-  id: string;
-
+export class User extends Base {
   @Column({
     name: 'email',
     type: 'varchar',
