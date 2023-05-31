@@ -1,8 +1,8 @@
 import { Expose } from 'class-transformer';
-import { IsEmail, IsNotEmpty, IsUUID, MaxLength } from 'class-validator';
+import { IsEmail, IsJWT, IsNotEmpty, IsUUID, MaxLength } from 'class-validator';
 import { User } from './user.entity';
 
-export class CreateUserDto {
+export class UserDto {
   static resource = User.name;
 
   @IsEmail()
@@ -11,6 +11,39 @@ export class CreateUserDto {
 
   @IsNotEmpty()
   password: string;
+}
+
+export class UserReturnDto {
+  @Expose()
+  id: string;
+
+  @Expose()
+  email: string;
+
+  @Expose()
+  admin: boolean;
+}
+
+export class UserReturnLoginDto {
+  @Expose()
+  id: string;
+
+  @Expose()
+  email: string;
+
+  @Expose()
+  admin: boolean;
+
+  @Expose()
+  access_token: string;
+
+  @Expose()
+  refresh_token: string;
+}
+
+export class UserRefreshTokenDto {
+  @IsJWT()
+  refresh_token: string;
 }
 
 export class UpdatePasswordUserDto {
@@ -25,12 +58,4 @@ export class UserParamsDto {
 
   @IsUUID()
   id: string;
-}
-
-export class ResponseUserDto {
-  @Expose()
-  id: number;
-
-  @Expose()
-  email: string;
 }

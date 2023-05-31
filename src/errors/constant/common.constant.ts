@@ -1,3 +1,4 @@
+// using validate dto
 export const commonError = {
   // 1000-1999
   isEmail: '1000',

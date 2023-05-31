@@ -1,15 +1,23 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { userError } from 'src/errors/constant/user.constant';
 import { User } from 'src/users/user.entity';
 import { DeleteResult, Repository, UpdateResult } from 'typeorm';
-import { IUser } from './user.type';
+import { IReturnLogin, IReturnRefreshToken, IUser } from './user.type';
+import { JwtService } from '@nestjs/jwt';
+import { ENV } from 'src/constant/constant.env';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    private jwtService: JwtService,
   ) {}
 
   async create(user: IUser): Promise<User> {
@@ -66,6 +74,43 @@ export class UserService {
       return this.userRepository.delete(id);
     } else {
       throw new BadRequestException(userError.isNotExistUser);
+    }
+  }
+
+  async login(user: IUser): Promise<IReturnLogin> {
+    const data = await this.userRepository.findOne({
+      where: {
+        email: user.email,
+      },
+    });
+    if (data) {
+      if (data.password === user.password) {
+        return {
+          ...data,
+          access_token: await this.jwtService.signAsync(user),
+          refresh_token: await this.jwtService.signAsync(user, {
+            expiresIn: ENV.JWT_REFRESH_TOKEN_EXPIRED,
+          }),
+        };
+      } else throw new UnauthorizedException(userError.isWrongPassword);
+    } else {
+      throw new BadRequestException(userError.isNotExistUser);
+    }
+  }
+
+  async refreshToken(refreshToken: string): Promise<IReturnRefreshToken> {
+    try {
+      const data = await this.jwtService.verifyAsync(refreshToken);
+      return {
+        access_token: await this.jwtService.signAsync({
+          email: data.email,
+          password: data.password,
+        } as IUser),
+      };
+    } catch (error) {
+      if (error.expiredAt)
+        throw new UnauthorizedException(userError.isExpiredJWT);
+      else throw new UnauthorizedException(userError.unauthorize);
     }
   }
 }
