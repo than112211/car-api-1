@@ -3,6 +3,7 @@ import {
   BadRequestException,
   Catch,
   ExceptionFilter,
+  UnauthorizedException,
   ValidationError,
 } from '@nestjs/common';
 import { Response } from 'express';

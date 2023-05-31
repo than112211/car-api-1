@@ -1,27 +1,39 @@
 import {
-  Injectable,
   CanActivate,
   ExecutionContext,
+  Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Observable } from 'rxjs';
+import { JwtService } from '@nestjs/jwt';
+import { Request } from 'express';
+import { userError } from 'src/errors/constant/user.constant';
 
 @Injectable()
-export class Auth implements CanActivate {
-  canActivate(
-    context: ExecutionContext,
-  ): boolean | Promise<boolean> | Observable<boolean> {
-    const request: Request = context.switchToHttp().getRequest();
-    const isAuthenticated = !!request;
-    // code ..
-    // if true => pass life cycle => interceptor
-    // if false => return 403 Forbbiden
+export class AuthGuard implements CanActivate {
+  constructor(private jwtService: JwtService) {}
 
-    //fake auth
-    if (!isAuthenticated) {
-      throw new UnauthorizedException('Unauthenticated');
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest();
+    const token = this.extractTokenFromHeader(request);
+    if (!token) {
+      throw new UnauthorizedException(userError.unauthorize);
     }
+    try {
+      const payload = await this.jwtService.verifyAsync(token);
+      // 💡 We're assigning the payload to the request object here
+      // so that we can access it in our route handlers
+      request['user'] = payload;
+    } catch (error) {
+      if (error.expiredAt)
+        throw new UnauthorizedException(userError.isExpiredJWT);
+      else throw new UnauthorizedException(userError.unauthorize);
+    }
+    return true;
+  }
 
-    return isAuthenticated;
+  private extractTokenFromHeader(request: Request): string | undefined {
+    const [type, token] = request.headers.authorization?.split(' ') ?? [];
+
+    return type === 'Bearer' ? token : undefined;
   }
 }

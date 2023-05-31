@@ -9,24 +9,25 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
-  CreateUserDto,
+  UserDto,
   UserParamsDto,
   UpdatePasswordUserDto,
-  ResponseUserDto,
+  UserReturnLoginDto,
+  UserReturnDto,
+  UserRefreshTokenDto,
 } from 'src/users/user.dto';
-import { Auth } from 'src/shared/guards/auth';
+import { AuthGuard } from 'src/shared/guards/auth';
 import { ResponseController } from 'src/shared/interceptors/transformResponse.interceptor';
 import { UserService } from 'src/users/user.service';
 import { Serialize } from 'src/shared/interceptors/serialize.interceptor';
 
 @Controller('user')
-@UseGuards(Auth)
-@Serialize(ResponseUserDto)
 export class UserController {
   constructor(private userService: UserService) {}
 
   @Post()
-  async createUser(@Body() body: CreateUserDto): Promise<ResponseController> {
+  @Serialize(UserReturnDto)
+  async createUser(@Body() body: UserDto): Promise<ResponseController> {
     const data = await this.userService.create(body);
     return {
       message: 'Tạo thành công user',
@@ -35,6 +36,7 @@ export class UserController {
   }
 
   @Get()
+  @Serialize(UserReturnDto)
   async getAll(): Promise<ResponseController> {
     const data = await this.userService.findAll();
     return {
@@ -43,6 +45,8 @@ export class UserController {
     };
   }
 
+  @UseGuards(AuthGuard)
+  @Serialize(UserReturnDto)
   @Get(':id')
   async getById(@Param() params: UserParamsDto): Promise<ResponseController> {
     const data = await this.userService.findById(params.id);
@@ -52,6 +56,7 @@ export class UserController {
     };
   }
 
+  @UseGuards(AuthGuard)
   @Patch(':id')
   async updatePassword(
     //Neu validate DTO bo sau : con validate build-in bo vao ()
@@ -73,6 +78,27 @@ export class UserController {
     await this.userService.deleteUser(params.id);
     return {
       message: 'Xóa thành công',
+    };
+  }
+
+  @Post('/login')
+  @Serialize(UserReturnLoginDto)
+  async login(@Body() body: UserDto): Promise<ResponseController> {
+    const data = await this.userService.login(body);
+    return {
+      message: 'Đăng nhập thành công',
+      data,
+    };
+  }
+
+  @Post('/refreshToken')
+  async refreshToken(
+    @Body() body: UserRefreshTokenDto,
+  ): Promise<ResponseController> {
+    const data = await this.userService.refreshToken(body.refresh_token);
+    return {
+      message: 'Refresh JWT thành công',
+      data,
     };
   }
 }
