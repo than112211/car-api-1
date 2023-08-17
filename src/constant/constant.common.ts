@@ -1,0 +1,6 @@
+const PAGINATION = {
+  CURRENT_PAGE: 1,
+  ITEM_PER_PAGE: 5,
+};
+
+export { PAGINATION };

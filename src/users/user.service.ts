@@ -6,9 +6,15 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { userError } from 'src/errors/constant/user.constant';
-import { User } from 'src/users/user.entity';
+import { Token, User } from 'src/users/user.entity';
 import { DeleteResult, Repository, UpdateResult } from 'typeorm';
-import { IReturnLogin, IReturnRefreshToken, IUser } from './user.type';
+import {
+  IDataUser,
+  IPayloadToken,
+  IReturnLogin,
+  IReturnRefreshToken,
+  IUser,
+} from './user.type';
 import { JwtService } from '@nestjs/jwt';
 import { ENV } from 'src/constant/constant.env';
 
@@ -18,6 +24,8 @@ export class UserService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private jwtService: JwtService,
+    @InjectRepository(Token)
+    private tokenRepository: Repository<Token>,
   ) {}
 
   async create(user: IUser): Promise<User> {
@@ -85,12 +93,22 @@ export class UserService {
     });
     if (data) {
       if (data.password === user.password) {
+        const access_token = await this.jwtService.signAsync(data.id);
+        const refresh_token = await this.jwtService.signAsync(data.id, {
+          expiresIn: ENV.JWT_REFRESH_TOKEN_EXPIRED,
+        });
+
+        // lưu token vào db
+        await this.tokenRepository.save({
+          user: data,
+          access_token: access_token,
+          refresh_token: refresh_token,
+        });
+
         return {
           ...data,
-          access_token: await this.jwtService.signAsync(user),
-          refresh_token: await this.jwtService.signAsync(user, {
-            expiresIn: ENV.JWT_REFRESH_TOKEN_EXPIRED,
-          }),
+          access_token: access_token,
+          refresh_token: refresh_token,
         };
       } else throw new UnauthorizedException(userError.isWrongPassword);
     } else {
@@ -101,11 +119,14 @@ export class UserService {
   async refreshToken(refreshToken: string): Promise<IReturnRefreshToken> {
     try {
       const data = await this.jwtService.verifyAsync(refreshToken);
+      const payload: IDataUser = {
+        id: data.id,
+        email: data.email,
+        password: data.password,
+        admin: data.admin,
+      };
       return {
-        access_token: await this.jwtService.signAsync({
-          email: data.email,
-          password: data.password,
-        } as IUser),
+        access_token: await this.jwtService.signAsync(payload),
       };
     } catch (error) {
       if (error.expiredAt)

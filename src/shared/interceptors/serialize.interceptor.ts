@@ -9,6 +9,7 @@ import {
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { plainToInstance } from 'class-transformer';
+import { IPagination } from '../types/common.type';
 
 interface ClassConstructor {
   new (...args: any[]);
@@ -17,6 +18,7 @@ interface ClassConstructor {
 export interface ResponseController {
   message: string;
   data?: any;
+  pagination?: IPagination;
 }
 
 export function Serialize(dto: ClassConstructor) {
@@ -33,7 +35,7 @@ export class SerializeInterceptor
     handler: CallHandler,
   ): Observable<ResponseController> {
     return handler.handle().pipe(
-      map((data: any) => {
+      map((data: ResponseController) => {
         throw new HttpException(
           {
             success: true,
@@ -42,6 +44,7 @@ export class SerializeInterceptor
               plainToInstance(this.dto, data.data, {
                 excludeExtraneousValues: true,
               }) || null,
+            pagination: data.pagination || undefined,
           },
           HttpStatus.OK,
         );
