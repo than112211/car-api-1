@@ -20,13 +20,20 @@ import { AuthGuard } from 'src/shared/guards/auth';
 import { ResponseController } from 'src/shared/interceptors/transformResponse.interceptor';
 import { UserService } from 'src/users/user.service';
 import { Serialize } from 'src/shared/interceptors/serialize.interceptor';
+import { ApiHeader, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { AUTH } from 'src/constant/constant.swager';
 
+@ApiTags('users')
 @Controller('user')
 export class UserController {
   constructor(private userService: UserService) {}
 
   @Post()
   @Serialize(UserReturnDto)
+  @ApiOkResponse({
+    type: UserReturnDto,
+  })
+  @ApiHeader(AUTH)
   async createUser(@Body() body: UserDto): Promise<ResponseController> {
     const data = await this.userService.create(body);
     return {
